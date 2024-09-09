@@ -31,52 +31,105 @@ namespace Login_System
             InitializeComponent();
         }
 
-        private void btnLogin_Click(object sender, RoutedEventArgs e)
+            private void btnLogin_Click(object sender, RoutedEventArgs e)
+            {
+                //validate
+                if (Utils.Validate(txtUsername.Text) && Utils.Validate(txtPassword.Text))
+                {
+                    using var connection = new MySqlConnection(connStr);
+                    connection.Open();
+                    using var command = new MySqlCommand("SELECT userid FROM users WHERE username = @paramUsername AND password = @paramPassword", connection);
+                    command.Parameters.AddWithValue("@paramUsername", txtUsername.Text);
+                    command.Parameters.AddWithValue("@paramPassword", txtPassword.Text);
+
+                    //reads results in a row in a database
+                    using var reader = command.ExecuteReader(); 
+                    if (reader.Read())
+                    {
+                        MessageBox.Show($"User {txtUsername.Text} has ID {reader.GetInt32(0)}");
+                    }
+                    else
+                    {
+                        MessageBox.Show($"User {txtUsername.Text} not found");
+                    }
+                }
+                else
+                {   
+                    MessageBox.Show("Textbox Blank. Please fill in both username and password!");
+                }
+            }
+
+        private void btnRegister_Click(object sender, RoutedEventArgs e)
         {
             //validate
             if (Utils.Validate(txtUsername.Text) && Utils.Validate(txtPassword.Text))
             {
                 using var connection = new MySqlConnection(connStr);
                 connection.Open();
-                using var command = new MySqlCommand("SELECT userid FROM users WHERE username = @paramUsername AND password = @paramPassword", connection);
+
+                //checks all the table if the user entered already exists in the table
+                using var check = new MySqlCommand("SELECT COUNT(*) FROM users WHERE username = @paramUsername", connection);
+                check.Parameters.AddWithValue("@paramUsername", txtUsername.Text);
+                int userExists = Convert.ToInt32(check.ExecuteScalar()); //only returns one value
+
+                if (userExists > 0) //if its more than then the user already exists in the table
+                {
+                    MessageBox.Show($"Username already exists");
+                }
+                else
+                {
+                    using var command = new MySqlCommand("INSERT INTO users (username, password) VALUES (@paramUsername, @paramPassword)", connection);
+                    command.Parameters.AddWithValue("@paramUsername", txtUsername.Text);
+                    command.Parameters.AddWithValue("@paramPassword", txtPassword.Text);
+
+                    //executes the var command
+                    int registered = command.ExecuteNonQuery();
+                    if (registered > 0) //checks if there is a table added
+                    {
+                        MessageBox.Show($"User {txtUsername.Text} has been registred succesfully!");
+                    }
+                    else
+                    {
+                        MessageBox.Show("Try Again.");
+                    }
+
+                }
+            }
+            else
+            {
+                MessageBox.Show("Textbox Blank. Please fill in both username and password!");
+            }
+            
+        }
+
+        private void btnDelete_Click(object sender, RoutedEventArgs e)
+        {
+            //validate
+            if (Utils.Validate(txtUsername.Text) && Utils.Validate(txtPassword.Text))
+            {
+                using var connection = new MySqlConnection(connStr);
+                connection.Open();
+                using var command = new MySqlCommand("DELETE FROM users WHERE username = @paramUsername AND password = @paramPassword", connection);
                 command.Parameters.AddWithValue("@paramUsername", txtUsername.Text);
                 command.Parameters.AddWithValue("@paramPassword", txtPassword.Text);
-                using var reader = command.ExecuteReader();
-                if (reader.Read())
+
+                //executes the var command
+                int deleted = command.ExecuteNonQuery(); 
+                if (deleted > 0) //checks if the table has been deleted
                 {
-                    MessageBox.Show($"User {txtUsername.Text} has ID {reader.GetInt32(0)}");
+                    MessageBox.Show($"User {txtUsername.Text} has been deleted.");
                 }
                 else
                 {
                     MessageBox.Show($"User {txtUsername.Text} not found");
                 }
             }
+
             else
             {
-                MessageBox.Show("textbox was blank!");
+                MessageBox.Show("Textbox Blank. Please fill in both username and password!");
             }
             
-
-        }
-
-        private void btnRegister_Click(object sender, RoutedEventArgs e)
-        {
-            using var connection = new MySqlConnection(connStr);
-            connection.Open();
-            using var command = new MySqlCommand("INSERT INTO users (username, password) VALUES (@paramUsername, @paramPassword)", connection);
-            command.Parameters.AddWithValue("@paramUsername", txtUsername.Text);
-            command.Parameters.AddWithValue("@paramPassword", txtPassword.Text);
-            command.ExecuteNonQuery();
-        }
-
-        private void btnDelete_Click(object sender, RoutedEventArgs e)
-        {
-            using var connection = new MySqlConnection(connStr);
-            connection.Open();
-            using var command = new MySqlCommand("DELETE FROM users WHERE username = @paramUsername AND password = @paramPassword", connection);
-            command.Parameters.AddWithValue("@paramUsername", txtUsername.Text);
-            command.Parameters.AddWithValue("@paramPassword", txtPassword.Text);
-            command.ExecuteNonQuery();
         }
     }
 }
